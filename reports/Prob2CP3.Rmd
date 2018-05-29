@@ -1,0 +1,104 @@
+---
+title: 'Prob2CP3: Uma análise sua'
+date: "29 de maio de 2018"
+output: html_document
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+library(plotly)
+theme_set(theme_bw())
+```
+
+Decidi analisar temas que se correlacionam, assim pude traçar paralelos entre os mesmos e analisar se algum interfere no outro. Geralmente pessoas que apoiam temas relacionados ao movimento LGBT defende bandeiras e militam em prol de outros temas relacionados, como o respeito à pessoa trans. Da mesma forma, se pessoas brancas ou pretas tendem ou não a defender temas que se relacionam à questões raciais. As perguntas que procurei responder de maneira simples e sucinta são tangentes a esses temas.
+
+```{r echo = F}
+respostas = read_csv(here::here("data/respostas-merepresenta-2016.csv"), 
+                     col_types = cols(.default = col_character(), 
+                                      nota_partido = col_integer(), 
+                                      votos_recebidos = col_integer()))
+
+# A versão long (em vez de wide) dos dados facilita muito pro ggplot:
+respostas_long = 
+    respostas %>% 
+    gather(key = "tema", 
+           value = "resposta", 
+           10:23)
+```
+
+Os candidatos de cor branca apoiam o tema "Ações afirmativas raciais" tanto quanto os que tem cor parda ou preta?
+
+```{r echo = F}
+brancos = respostas %>% filter(cor_tse == 'BRANCA') %>%
+        summarise(Porcentagem_brancos = sum(`Ações afirmativas raciais` =='S')/n()) %>%
+        glimpse
+        
+```
+
+
+
+```{r echo = F}
+pretos_pardos = respostas %>% filter(cor_tse == "PRETA" | cor_tse == "PARDA")  %>%
+        summarise(Porcentagem_pretos_e_pardos = sum(`Ações afirmativas raciais` =='S')/n()) %>%
+        glimpse
+```
+
+Analisamos acima as proporções de candidatos de cor branca e de cor parda ou preta que mais apoiam o temma "Ações afirmativas raciais". Apenas com essa proporção podemos perceber que a aceitação é bastante alta, mais do segundo grupo do que do prineiro, que são 82.31% de brancos que apoiam e 88.77% de pretos e pardos que apoiam.
+
+Qual é a situação eleitoral dos candidatos que rejeitaram esse tópico?
+
+```{r echo = F}
+grafico1 = respostas %>% filter((cor_tse == 'BRANCA' | cor_tse == "PRETA" | cor_tse == "PARDA") & `Ações afirmativas raciais` == 'N') %>%
+        group_by(sigla_partido) %>%
+        ggplot(aes(y = sigla_partido, x = situacao_eleitoral, color = cor_tse, Nome = nome_candidato, estado = sigla_estado, size=votos_recebidos)) +
+        labs(x = "Situação Eleitoral", y = "Partido", nome_candidato = "Nome") +
+        geom_point(position = position_jitter(width = 0.25, height = 0.0)) +
+        guides(color = guide_legend("Raça"))
+
+        
+       ggplotly(grafico1, tooltip = c("~nome_candidato", "~votos_recebidos", "~sigla_estado"))
+```
+
+
+A partir do gráfico acima podemos perceber o seguinte, todos os candidatos presentes nesta análise não apoiaram  o tema "Ações afirmativas raciais", e a maioria esmagadora não foi eleito ou está como suplente. Colocando o mouse em cima do ponto, cada candidato, podemos saber seu nome, a quantidade de votos recebidos e a sigla do estado onde se candidatou.
+
+
+Os candidatos que apoiam o tema "Respeito à identidade de gênero de pessoas trans" tendem a apoiar ou não o tem "Criminalização da LGBTfobia"?
+
+ 
+```{r echo = F}
+id_genero = respostas %>% filter(`Respeito à identidade de gênero de pessoas trans` == 'S') %>%
+        summarise(Porcentagem_LGBTfobia = sum(`Criminalização da LGBTfobia` == 'S')/n()) %>%
+        glimpse
+        
+```
+
+Analisando o dado acima, existe uma boa proporção de pessoas que apoiam o tema "Criminalização da LGBTfobia" que também apoiam o tema "Respeito à identidade de gênero de pessoas trans", cerca de 87.91%.
+
+
+Quais partidos elegeram mais candidatos que apoiaram o tema "Respeito à identidade de gênero de pessoas trans" e quantos votos cada um recebeu?
+
+```{r echo = F}
+grafico2 = respostas %>% filter(`Respeito à identidade de gênero de pessoas trans` == 'S' & (situacao_eleitoral == 'ELEITO POR QP' | situacao_eleitoral == 'ELEITO POR MÉDIA')) %>%
+        group_by(sigla_partido) %>%
+        ggplot(aes(y =sigla_partido, x = votos_recebidos, color = sigla_partido, Nome = nome_candidato, estado = sigla_estado)) +
+        labs(x = "Quantidade de Votos Recebidos", y = "Partido", nome_candidato = "Nome") +
+        geom_point() + 
+        guides(color = guide_legend("Partido"))
+
+        
+       ggplotly(grafico2,  tooltip = c("~nome_candidato", "~sigla_estado"))
+```
+
+
+
+Analisando o gráfico acima, percebemos que dentre os candidatos que foram eleitos e apoiaram o tema "Respeito à identidade de gênero de pessoas trans" a grande maioria pertence ao PT e ao PSOL. Obviamente, candidatos que pertencem à estados mais populosos receberam uma maior quantidade de votos como mostra o gráfico. Mas isso não interfere na nossa análise, apenas à título de consulta.
+
+
+
+
+
+
+
+
